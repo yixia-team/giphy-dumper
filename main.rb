@@ -4,8 +4,8 @@ require 'bundler/setup'
 
 require "open-uri"
 require 'active_support'
-require 'active_support/core_ext' # to_query
-require 'byebug'
+require 'active_support/core_ext' # to_query support
+#require 'byebug'
 
 if ARGV.length == 0
   puts """At least one keyword should be given.
@@ -20,9 +20,12 @@ ARGV.each_with_index do |keyword, i|
   puts log_suffix + "Now searching keyword: #{keyword}"
   limit = 25
   keyword, limit = keyword.split(":") if keyword.include? ":"
+  offset_file = "./incoming/#{keyword}/.offset"
+  offset = 0
+  offset = File.new(offset_file, "r").gets.to_i if File.exists?(offset_file)
 
   # WARNING: using public API key in this case, should be replaced with your own.
-  query ={ api_key: "dc6zaTOxFJmzC" , q: keyword.strip, limit: limit }
+  query ={ api_key: "dc6zaTOxFJmzC" , q: keyword.strip, limit: limit, offset: offset }
   search_url = "http://api.giphy.com/v1/gifs/search?" + query.to_query
   puts log_suffix + "Search URL: #{search_url}"
 
@@ -36,7 +39,7 @@ ARGV.each_with_index do |keyword, i|
   directory = "./incoming/#{keyword}/"
   system 'mkdir', '-p', directory
 
-  # Start downloading GIFs.
+  # Download.
   res.each_with_index do |target, j|
     if File.exists?(directory + target[:filename])
       puts log_suffix + "[#{j+1}/#{res.length}] #{target[:filename]} exists. Skipped."
@@ -50,6 +53,9 @@ ARGV.each_with_index do |keyword, i|
     end
     print "DONE.\n"
   end
+
+  # Write offset count into .offset file.
+  File.open(offset_file, "w") { |file| file.puts offset + limit }
 
   puts log_suffix + "Keyword #{keyword} finished.\n"
 
