@@ -5,7 +5,7 @@ Check [GiphyAPI](https://github.com/Giphy/GiphyAPI) for more details.
 ### Install
 
 ```bash
-git clone git@yixia.dev:yixia/giphy-dumper.git
+git clone git@github.com:yixia-team/giphy-dumper.git
 cd ./giphy-dumper
 bundle install
 chmod +x main.rb
