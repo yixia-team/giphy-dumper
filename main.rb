@@ -2,31 +2,58 @@
 require 'rubygems'
 require 'bundler/setup'
 
-require "nokogiri"
-require "httparty"
+require "open-uri"
 require 'active_support'
 require 'active_support/core_ext' # to_query
 require 'byebug'
 
 if ARGV.length == 0
-  puts "At least one keyword should be given.\nExample: ./main.rb cat dog anime\nExit now."
-  abort
+  puts """At least one keyword should be given.
+Example: ./main.rb cat dog anime:200
+Exit now."""
+  abort # An unsuccessful exit.
 end
 
-ARGV.each do |keyword|
-  #puts keyword
+ARGV.each_with_index do |keyword, i|
   # Init
-  query ={ api_key: "dc6zaTOxFJmzC" , q: keyword.strip } # Public API key, should be replaced in the future.
-  search_url = "http://api.giphy.com/v1/gifs/search?"
+  log_suffix = "[#{i+1}/#{ARGV.length}] "
+  puts log_suffix + "Now searching keyword: #{keyword}"
+  limit = 25
+  keyword, limit = keyword.split(":") if keyword.include? ":"
+
+  # WARNING: using public API key in this case, should be replaced with your own.
+  query ={ api_key: "dc6zaTOxFJmzC" , q: keyword.strip, limit: limit }
+  search_url = "http://api.giphy.com/v1/gifs/search?" + query.to_query
+  puts log_suffix + "Search URL: #{search_url}"
+
   # Get list.
-  byebug
-  res = HTTParty.get(search_url + query.to_query)
-  res = JSON.parse(res.body)["data"]
+  res = JSON.parse(open(search_url).read)["data"]
   res = res.map do |r|
     {url: r["images"]["original"]["url"], filename: r["id"] + ".gif"}
   end
 
-  puts res
-  exit
+  # Init local directory.
+  directory = "./incoming/#{keyword}/"
+  system 'mkdir', '-p', directory
+
+  # Start downloading GIFs.
+  res.each_with_index do |target, j|
+    if File.exists?(directory + target[:filename])
+      puts log_suffix + "[#{j+1}/#{res.length}] #{target[:filename]} exists. Skipped."
+      next
+    end
+    print log_suffix + "[#{j+1}/#{res.length}] Now downloading #{directory + target[:filename]} ...... "
+    open(target[:url]) do |f|
+      File.open(directory + target[:filename], "wb") do |file|
+        file.puts f.read
+      end
+    end
+    print "DONE.\n"
+  end
+
+  puts log_suffix + "Keyword #{keyword} finished.\n"
 
 end
+
+puts "\n\nALL DONE. ENJOY!!!"
+exit
