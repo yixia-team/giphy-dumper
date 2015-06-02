@@ -14,15 +14,27 @@ Exit now."""
   abort # An unsuccessful exit.
 end
 
-ARGV.each_with_index do |keyword, i|
-  # Init
+ARGV.each_with_index do |original_keyword, i|
   log_suffix = "[#{i+1}/#{ARGV.length}] "
-  puts log_suffix + "Now searching keyword: #{keyword}"
-  limit = 25
-  keyword, limit = keyword.split(":") if keyword.include? ":"
+  puts log_suffix + "Now searching keyword: #{original_keyword}"
+
+  # Parse argv.
+  if original_keyword.include? ":"
+    keyword, limit = original_keyword.split(":")
+  else
+    keyword = original_keyword
+    limit = 25
+  end
+
+  # Load offset from file.
   offset_file = "./incoming/#{keyword}/.offset"
   offset = 0
   offset = File.new(offset_file, "r").gets.to_i if File.exists?(offset_file)
+
+  # Init local directory.
+  directory = "./incoming/#{keyword}/"
+  system 'mkdir', '-p', directory
+  keyword.gsub! "+", " " # for to_query
 
   # WARNING: using public API key in this case, should be replaced with your own.
   query ={ api_key: "dc6zaTOxFJmzC" , q: keyword.strip, limit: limit, offset: offset }
@@ -35,9 +47,6 @@ ARGV.each_with_index do |keyword, i|
     {url: r["images"]["original"]["url"], filename: r["id"] + ".gif"}
   end
 
-  # Init local directory.
-  directory = "./incoming/#{keyword}/"
-  system 'mkdir', '-p', directory
 
   # Download.
   res.each_with_index do |target, j|
