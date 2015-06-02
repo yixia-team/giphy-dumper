@@ -34,7 +34,7 @@ ARGV.each_with_index do |original_keyword, i|
   # Init local directory.
   directory = "./incoming/#{keyword}/"
   system 'mkdir', '-p', directory
-  keyword.gsub! "+", " " # for to_query
+  keyword = keyword.gsub "+", " " # for to_query
 
   # WARNING: using public API key in this case, should be replaced with your own.
   query ={ api_key: "dc6zaTOxFJmzC" , q: keyword.strip, limit: limit, offset: offset }
